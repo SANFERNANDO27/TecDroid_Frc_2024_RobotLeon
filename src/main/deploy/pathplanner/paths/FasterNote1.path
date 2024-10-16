@@ -1,0 +1,100 @@
+{
+  "version": 1.0,
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 1.4394635305561345,
+        "y": 5.483151617932309
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 2.4394635305561354,
+        "y": 5.483151617932309
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.0421875485783314,
+        "y": 7.005677770754038
+      },
+      "prevControl": {
+        "x": 1.5731989358715563,
+        "y": 6.995390431883621
+      },
+      "nextControl": {
+        "x": 2.462332867995344,
+        "y": 7.014893724315718
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.9105529890257786,
+        "y": 7.005677770754038
+      },
+      "prevControl": {
+        "x": 2.3550366900232556,
+        "y": 7.005677770754038
+      },
+      "nextControl": {
+        "x": 3.096864620062095,
+        "y": 7.005677770754038
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.4681974175978434,
+        "y": 6.285564049824842
+      },
+      "prevControl": {
+        "x": 2.601932822913265,
+        "y": 6.71763228238236
+      },
+      "nextControl": {
+        "x": 2.3111687021790006,
+        "y": 5.778240507702424
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.0421875485783314,
+        "y": 5.48
+      },
+      "prevControl": {
+        "x": 2.1347735984120852,
+        "y": 5.634310083055438
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 2.5,
+    "maxAcceleration": 2.0,
+    "maxAngularVelocity": 35.0,
+    "maxAngularAcceleration": 4.0
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 180.0,
+    "rotateFast": false
+  },
+  "reversed": false,
+  "folder": "FasterNotesPaths",
+  "previewStartingState": {
+    "rotation": 180.0,
+    "velocity": 0
+  },
+  "useDefaultConstraints": true
+}

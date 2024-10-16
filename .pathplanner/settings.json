@@ -1,0 +1,22 @@
+{
+  "robotWidth": 0.69,
+  "robotLength": 0.82,
+  "holonomicMode": true,
+  "pathFolders": [
+    "FastNotesPath",
+    "FasterNotesPaths",
+    "MuchFasterNotesPaths",
+    "NotesPaths"
+  ],
+  "autoFolders": [
+    "Autos",
+    "ExampleAutos",
+    "NotesAutoFaster",
+    "NotesAuto"
+  ],
+  "defaultMaxVel": 2.5,
+  "defaultMaxAccel": 2.0,
+  "defaultMaxAngVel": 35.0,
+  "defaultMaxAngAccel": 4.0,
+  "maxModuleSpeed": 5.0
+}
