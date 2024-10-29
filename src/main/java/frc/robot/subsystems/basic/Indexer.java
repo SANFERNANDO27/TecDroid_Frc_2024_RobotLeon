@@ -3,12 +3,14 @@ package frc.robot.subsystems.basic;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkBase.ControlType;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkPIDController;
 
+import edu.wpi.first.networktables.NetworkTableInstance.NetworkMode;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import frc.robot.constants.Constants.IndexerConstants;
@@ -27,7 +29,8 @@ public class Indexer {
         indexerTab.addDouble("Velocity (RPMs)", () -> {return getMotorVelocity();});
 
         indexerMotor = new TalonFX(motorId);
-        indexerMotor.setInverted(true);
+        indexerMotor.setInverted(false);
+        indexerMotor.setNeutralMode(NeutralModeValue.Brake);
 
         // PID
         indexerPidController = new Slot0Configs();

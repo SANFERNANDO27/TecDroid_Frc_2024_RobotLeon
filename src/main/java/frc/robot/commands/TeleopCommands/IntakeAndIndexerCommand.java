@@ -33,6 +33,12 @@ public class IntakeAndIndexerCommand extends Command {
 
     }
 
+    public void setIntakeAndIndexer(double intakePercentage, double indexerPercentage) {
+        intake.setPercentage(intakePercentage);
+        indexer.setPercentage(indexerPercentage);
+
+    }
+
     public void stopIntakeAndIndexer() {
         intake.setPercentage(0);
         indexer.setPercentage(0);

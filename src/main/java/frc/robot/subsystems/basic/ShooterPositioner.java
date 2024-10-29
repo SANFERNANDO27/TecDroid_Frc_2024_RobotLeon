@@ -11,12 +11,14 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkPIDController;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import frc.robot.constants.Constants.ShooterPositionerConstants;
 import frc.robot.constants.ShooterPoseObject;
 import frc.robot.subsystems.Sensors.Limelight;
+import frc.robot.subsystems.Sensors.LimitSwitches;
 
 
 public class ShooterPositioner {
@@ -31,21 +33,14 @@ public class ShooterPositioner {
     private final SparkPIDController rightPidController;
     private final SparkPIDController leftPidController;
     private final PIDController pidController;
+    
+    private final LimitSwitches limitSwitches;
 
     private final Limelight limelight = new Limelight();
 
     List<ShooterPoseObject<Double, Double, Double>> estimatedShooterPoseList;
 
-    public ShooterPositioner(final int rightId, final int leftId) {
-        ShuffleboardTab shooterTab = Shuffleboard.getTab("ShooterPositioner");
-        shooterTab.addDouble("Right Velocity (RPMs)", () -> {return getRightVelocity();});
-        shooterTab.addDouble("Left Velocity (RPMs)", () -> {return getLeftVelocity();});
-        shooterTab.addDouble("Encoder distance", () -> {return getEncoderPositionInDegrees();});
-
-        shooterTab.addDouble("Limelight X: ", () -> {return limelight.getX();});
-        shooterTab.addDouble("Estimated Pose: ", () -> {return getEstimatedShooterPositionerAngleWithRect();});
-        
-
+    public ShooterPositioner(final int rightId, final int leftId, LimitSwitches limitSwitches) {
         rightMotor = new CANSparkMax(rightId, MotorType.kBrushless);
         leftMotor = new CANSparkMax(leftId, MotorType.kBrushless);
 
@@ -55,6 +50,11 @@ public class ShooterPositioner {
         // Invert Bottom motor
         rightMotor.setInverted(true);
         leftMotor.setInverted(false);
+
+        // Idle Brake mode
+        // Set Idle Mode to brake to avoid shooter positioner falling
+        rightMotor.setIdleMode(CANSparkMax.IdleMode.kBrake);
+        leftMotor.setIdleMode(CANSparkMax.IdleMode.kBrake);
 
         rightEncoder = rightMotor.getEncoder();
         leftEncoder = leftMotor.getEncoder();
@@ -77,35 +77,34 @@ public class ShooterPositioner {
         leftPidController.setD(ShooterPositionerConstants.leftD);
         leftPidController.setFF(ShooterPositionerConstants.leftF);
 
-        pidController = new PIDController(ShooterPositionerConstants.kP, ShooterPositionerConstants.kI, ShooterPositionerConstants.kD);
+        ShuffleboardTab shooterTab = Shuffleboard.getTab("ShooterPositioner");
+
+        shooterTab.addDouble("Right Velocity (RPMs)", () -> {return getRightVelocity();});
+        shooterTab.addDouble("Left Velocity (RPMs)", () -> {return getLeftVelocity();});
+        shooterTab.addDouble("Encoder distance", () -> {return getEncoderPositionInDegrees();});
+        shooterTab.addBoolean("LimitSwitch Read", () -> {return limitSwitches.getShooterPositionerLimitSwitch();});
+
+        shooterTab.addDouble("Limelight X: ", () -> {return limelight.getX();});
+        shooterTab.addDouble("Estimated Pose: ", () -> {return getEstimatedShooterPositionerAngleWithRect();});
+
+        pidController = new PIDController(
+            ShooterPositionerConstants.kP, 
+            ShooterPositionerConstants.kI, 
+            ShooterPositionerConstants.kD);
         pidController.setTolerance(2, 10);
 
-        // Estimated angle acording to the pose range
-        estimatedShooterPoseList = new ArrayList<>();
-            estimatedShooterPoseList.add(new ShooterPoseObject<>(1.0, 6.0, 30.0));
-            estimatedShooterPoseList.add(new ShooterPoseObject<>(6.0, 8.0, 25.0));
-            estimatedShooterPoseList.add(new ShooterPoseObject<>(8.0, 10.0, 20.0));
-            estimatedShooterPoseList.add(new ShooterPoseObject<>(10.0, 12.0, 17.0));
-            estimatedShooterPoseList.add(new ShooterPoseObject<>(17.0, 19.0, 16.0));
-
-    }
-
-    public double getEstimatedShooterPositionerAngle() {
-        double position = 40.0;
-
-        // Compare all the posible distances with a structure
-        for (ShooterPoseObject<Double, Double, Double> item : estimatedShooterPoseList) {
-            // invert the limelight read to compare it
-            if (-limelight.getY() < item.getMaxDistance() && -limelight.getY() > item.getMinDistance()) {
-                position = item.getEstimatedAngle().doubleValue();
-            }
-        }
-
-        return position;
+        this.limitSwitches = limitSwitches;
     }
 
     public double getEstimatedShooterPositionerAngleWithRect() {
-        return -(14.0/16.0) * (-limelight.getY() - 1.0) + 31.5;
+        double limelightY = limelight.getY();
+
+        if (limelightY > 7) {
+            return -(4.88/4.28) * (limelight.getY()) + 30;
+        } else {
+            return -(4.88/4.28) * (limelight.getY()) + 34;
+        }
+        
     }
 
     public void goToEstimatedShooterPositionAngle() {
@@ -122,19 +121,19 @@ public class ShooterPositioner {
     }
 
     public double getEncoderPositionInRot() {
-        double positionEncoder = -positionerEncoder.getAbsolutePosition(); // invert encoder 
-        // set 0 position
-        positionEncoder += ShooterPositionerConstants.zeroPosition;
-        return positionEncoder;
+        return positionerEncoder.getAbsolutePosition();
     }
 
     public double getEncoderPositionInDegrees() {
-        return getEncoderPositionInRot() * 360;
+        double positionEncoderInDegrees = getEncoderPositionInRot() * 360;
+        // set 0 position
+        positionEncoderInDegrees -= ShooterPositionerConstants.zeroPosition;
+        return positionEncoderInDegrees;
     }
 
     public void setPercentage(final double leftPercentage, final double rightPercentage) {
         // set limits
-        if (getEncoderPositionInDegrees() < ShooterPositionerConstants.downLimitInDegrees && leftPercentage < 0 || getEncoderPositionInDegrees() > ShooterPositionerConstants.upLimitInDegrees && leftPercentage > 0) {
+        if ((getEncoderPositionInDegrees() < ShooterPositionerConstants.downLimitInDegrees || limitSwitches.getShooterPositionerLimitSwitch()) && leftPercentage < 0 || getEncoderPositionInDegrees() > ShooterPositionerConstants.upLimitInDegrees && leftPercentage > 0) {
             rightMotor.set(0.0);
             leftMotor.set(0.0);
         }else {
@@ -167,7 +166,7 @@ public class ShooterPositioner {
         double percentage = pidController.calculate(getEncoderPositionInDegrees(), setPoint);
 
         // Positioner limits
-         if (getEncoderPositionInDegrees() < ShooterPositionerConstants.downLimitInDegrees && percentage < 0 || getEncoderPositionInDegrees() > ShooterPositionerConstants.upLimitInDegrees && percentage > 0) {
+        if ((getEncoderPositionInDegrees() < ShooterPositionerConstants.downLimitInDegrees || limitSwitches.getShooterPositionerLimitSwitch()) && percentage < 0 || getEncoderPositionInDegrees() > ShooterPositionerConstants.upLimitInDegrees && percentage > 0) {
             rightMotor.set(0.0);
             leftMotor.set(0.0);
         }else {

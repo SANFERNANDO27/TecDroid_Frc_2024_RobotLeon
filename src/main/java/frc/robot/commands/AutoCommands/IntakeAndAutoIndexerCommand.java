@@ -26,7 +26,7 @@ public class IntakeAndAutoIndexerCommand extends Command {
 
     @Override
     public void execute() {
-        if (!limitSwitches.getLimitSwitchesRead()) {
+        if (!limitSwitches.getShooterLimitSwitch()) {
             indexer.setVelocity(IndexerConstants.AutoVelocity);
             intake.setVelocity(IndexerConstants.AutoVelocity);
         } else {
@@ -43,6 +43,6 @@ public class IntakeAndAutoIndexerCommand extends Command {
 
     @Override
     public boolean isFinished() {
-        return limitSwitches.getLimitSwitchesRead();
+        return limitSwitches.getShooterLimitSwitch();
     }
 }

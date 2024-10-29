@@ -20,9 +20,9 @@ public final class SwerveConstants {
 
     public static final class DriveConstants {
 
-        public static final double kTrackWidth = Units.inchesToMeters(21.75);
+        public static final double kTrackWidth = Units.inchesToMeters(19.73);
         // Distance between right and left wheels
-        public static final double kWheelBase = Units.inchesToMeters(21.75);
+        public static final double kWheelBase = Units.inchesToMeters(15.73);
         // Distance between front and back wheels
         public static final SwerveDriveKinematics kDriveKinematics = new SwerveDriveKinematics(
                 new Translation2d(kWheelBase / 2, -kTrackWidth / 2),
@@ -43,17 +43,17 @@ public final class SwerveConstants {
         public static final boolean kFrontLeftTurningEncoderReversed = true;
         public static final boolean kBackLeftTurningEncoderReversed = true;
         public static final boolean kFrontRightTurningEncoderReversed = true;
-        public static final boolean kBackRightTurningEncoderReversed = true;
+        public static final boolean kBackRightTurningEncoderReversed = false;
 
-        public static final boolean kFrontLeftDriveEncoderReversed = true;
-        public static final boolean kBackLeftDriveEncoderReversed = false;
-        public static final boolean kFrontRightDriveEncoderReversed = true;
-        public static final boolean kBackRightDriveEncoderReversed = true;
+        public static final boolean kFrontLeftDriveEncoderReversed = false;
+        public static final boolean kBackLeftDriveEncoderReversed = true;
+        public static final boolean kFrontRightDriveEncoderReversed = false;
+        public static final boolean kBackRightDriveEncoderReversed = false;
 
-        public static final int kFrontLeftDriveAbsoluteEncoderPort = 23;
-        public static final int kBackLeftDriveAbsoluteEncoderPort = 33;
-        public static final int kFrontRightDriveAbsoluteEncoderPort = 13;
-        public static final int kBackRightDriveAbsoluteEncoderPort = 43;
+        public static final int kFrontLeftDriveAbsoluteEncoderPort = 20;
+        public static final int kBackLeftDriveAbsoluteEncoderPort = 30;
+        public static final int kFrontRightDriveAbsoluteEncoderPort = 10;
+        public static final int kBackRightDriveAbsoluteEncoderPort = 40;
 
         public static final boolean kFrontLeftDriveAbsoluteEncoderReversed = false;
         public static final boolean kBackLeftDriveAbsoluteEncoderReversed = false;
@@ -106,7 +106,7 @@ public final class SwerveConstants {
 
     public static final class RotateConstants {
         // PID
-        public static final double kP = 0.05;
+        public static final double kP = 0.045;
         public static final double kI = 0.0;
         public static final double kD = 0.0005;
 

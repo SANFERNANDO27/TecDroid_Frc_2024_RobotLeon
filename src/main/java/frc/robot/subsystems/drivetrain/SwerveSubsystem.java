@@ -123,11 +123,18 @@ public class SwerveSubsystem extends SubsystemBase {
                 },
                 this // Reference to this subsystem to set requirements
         );
-        //ShuffleboardData();
+        ShuffleboardData();
     }
 
     public void zeroHeading() {
         gyro.reset();
+    }
+
+    public void resetEncoders() {
+        frontRight.resetEncoders();
+        frontLeft.resetEncoders();
+        backRight.resetEncoders();
+        backLeft.resetEncoders();
     }
 
     public double getGyroYaw() {

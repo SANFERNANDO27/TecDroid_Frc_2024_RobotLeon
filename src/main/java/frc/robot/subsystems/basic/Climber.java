@@ -8,9 +8,10 @@ import com.revrobotics.SparkPIDController;
 
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ClimberConstants;
 
-public class Climber {
+public class Climber extends SubsystemBase{
     
     private final CANSparkMax rightMotor;
     private final CANSparkMax leftMotor;
@@ -22,10 +23,6 @@ public class Climber {
     private final SparkPIDController leftPidController;
 
     public Climber(final int rightId, final int leftId) {
-        ShuffleboardTab shooterTab = Shuffleboard.getTab("Climber");
-        shooterTab.addDouble("Right Position (RPMs)", () -> {return getRightPosition();});
-        shooterTab.addDouble("Left Position (RPMs)", () -> {return getLeftPosition();});
-
         rightMotor = new CANSparkMax(rightId, MotorType.kBrushless);
         leftMotor = new CANSparkMax(leftId, MotorType.kBrushless);
 
@@ -113,6 +110,22 @@ public class Climber {
             rightPidController.setReference(rightRpms, ControlType.kVelocity);
             leftPidController.setReference(leftRpms, ControlType.kVelocity);
 
+    }
+
+    public boolean isAtTopLimit() {
+        if (getRightPosition() > ClimberConstants.upLimit && getLeftPosition() > ClimberConstants.upLimit) {
+            return true;
+        }else {
+            return false;
+        }
+    }
+
+    public boolean isAtBottomLimit() {
+        if (getRightPosition() < ClimberConstants.downLimit && getLeftPosition() < ClimberConstants.downLimit) {
+            return true;
+        }else {
+            return false;
+        }
     }
 
 

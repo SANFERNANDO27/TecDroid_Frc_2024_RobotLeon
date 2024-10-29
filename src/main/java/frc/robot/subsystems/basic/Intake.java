@@ -13,44 +13,67 @@ import frc.robot.constants.Constants.IntakeConstants;
 
 public class Intake {
     
-    private final CANSparkMax intakeMotor;
+    // Top
+    private final CANSparkMax topMotor;
+    private final RelativeEncoder topEncoder;
+    private final SparkPIDController topPidController;
 
-    private final RelativeEncoder motorEncoder;
+    // Bottom
+    private final CANSparkMax bottomMotor;
+    private final RelativeEncoder bottomEncoder;
+    private final SparkPIDController bottomPidController;
+    
 
-    private final SparkPIDController motorPidController;
-
-    public Intake(final int motorId) {
+    public Intake(final int topId, final int bottomId) {
         ShuffleboardTab shooterTab = Shuffleboard.getTab("Intake");
-        shooterTab.addDouble("Velocity (RPMs)", () -> {return getBottomVelocity();});
+        shooterTab.addDouble("Top (RPMs)", () -> {return getTopVelocity();});
+        shooterTab.addDouble("Bottom (RPMs)", () -> {return getBottomVelocity();});
 
-        intakeMotor = new CANSparkMax(motorId, MotorType.kBrushless);
-        intakeMotor.setInverted(true);
+        topMotor = new CANSparkMax(topId, MotorType.kBrushless);
+        bottomMotor = new CANSparkMax(bottomId, MotorType.kBrushless);
+        topMotor.setInverted(true);
+        bottomMotor.setInverted(false);
 
-        motorEncoder = intakeMotor.getEncoder();
+        topEncoder = topMotor.getEncoder();
+        bottomEncoder = bottomMotor.getEncoder();
 
-        motorEncoder.setPositionConversionFactor(1);
-        motorEncoder.setVelocityConversionFactor(1);
+        topEncoder.setPositionConversionFactor(1);
+        topEncoder.setVelocityConversionFactor(1);
+        bottomEncoder.setPositionConversionFactor(1);
+        bottomEncoder.setVelocityConversionFactor(1);
 
         // PID
-        motorPidController = intakeMotor.getPIDController();
-        motorPidController.setP(IntakeConstants.motor_P);
-        motorPidController.setI(IntakeConstants.motor_I);
-        motorPidController.setD(IntakeConstants.motor_D);
-        motorPidController.setFF(IntakeConstants.motor_f);
+        topPidController = topMotor.getPIDController();
+        topPidController.setP(IntakeConstants.topMotor_P);
+        topPidController.setI(IntakeConstants.topMotor_I);
+        topPidController.setD(IntakeConstants.topMotor_D);
+        topPidController.setFF(IntakeConstants.topMotor_f);
+
+        bottomPidController = topMotor.getPIDController();
+        bottomPidController.setP(IntakeConstants.bottomMotor_P);
+        bottomPidController.setI(IntakeConstants.bottomMotor_I);
+        bottomPidController.setD(IntakeConstants.bottomMotor_D);
+        bottomPidController.setFF(IntakeConstants.bottomMotor_f);
 
     }
 
+    public double getTopVelocity() {
+        return topEncoder.getVelocity();
+    }
+    
     public double getBottomVelocity() {
-        return motorEncoder.getVelocity();
+        return bottomEncoder.getVelocity();
     }
 
     public void setPercentage(final double motorPercentage) {
-        intakeMotor.set(motorPercentage);
+        topMotor.set(motorPercentage);
+        bottomMotor.set(motorPercentage);
 
     }
 
     public void setVelocity(final double rpms) {
-        motorPidController.setReference(rpms, ControlType.kVelocity);
+        topPidController.setReference(rpms, ControlType.kVelocity);
+        bottomPidController.setReference(rpms, ControlType.kVelocity);
 
     }
 

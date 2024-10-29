@@ -64,6 +64,6 @@ public class StartShoot extends Command {
 
     @Override
     public boolean isFinished() {
-        return !limitSwitches.getLimitSwitchesRead();
+        return !limitSwitches.getShooterLimitSwitch();
     }
 }

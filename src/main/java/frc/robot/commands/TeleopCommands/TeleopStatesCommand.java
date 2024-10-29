@@ -7,6 +7,7 @@ import frc.robot.constants.Constants.ShooterConstants;
 import frc.robot.constants.Constants.ShooterPositionerConstants;
 import frc.robot.constants.VelocityConstants;
 import frc.robot.subsystems.Sensors.LimitSwitches;
+import frc.robot.subsystems.basic.Climber;
 import frc.robot.subsystems.basic.Indexer;
 import frc.robot.subsystems.basic.Intake;
 import frc.robot.subsystems.basic.Shooter;
@@ -14,26 +15,30 @@ import frc.robot.subsystems.basic.ShooterPositioner;
 
 import java.util.function.Supplier;
 
-public class ShooterCommand extends Command {
+public class TeleopStatesCommand extends Command {
 
     private final Shooter shooter;
     private final ShooterPositioner shooterPositioner;
-    private final Intake intake;
     private final Indexer indexer;
+    private final Climber climber;
     private final Supplier<Double> rightTriggerAxis, leftTriggerAxis;
     private Supplier<Boolean> neutralTrigger, speakerButton, ampButton, lowPassButton, longPassButton, climberButton;
     private boolean neutralState, speakerState, ampState, lowPassState, longPassState, climberState;
 
-    public ShooterCommand(Supplier<Double> rightTriggerAxis, Supplier<Double> leftTriggerAxis, 
+    double climbStages = 0;
+
+    public TeleopStatesCommand(Climber climber, Shooter shooter, ShooterPositioner shooterPositioner, Intake intake, Indexer indexer,
+            Supplier<Double> rightTriggerAxis, Supplier<Double> leftTriggerAxis, 
             Supplier<Boolean> neutralTigger, Supplier<Boolean> speakerButton, Supplier<Boolean> ampButton,
-            Supplier<Boolean> lowPassButton, Supplier<Boolean> longPassButton, Supplier<Boolean> climberButton, 
-            Shooter shooter, ShooterPositioner shooterPositioner, Intake intake, Indexer indexer) {
+            Supplier<Boolean> lowPassButton, Supplier<Boolean> longPassButton, Supplier<Boolean> climberButton) {
         this.shooterPositioner = shooterPositioner;
         this.shooter = shooter;
-        this.intake = intake;
         this.indexer = indexer;
+        this.climber = climber;
         this.rightTriggerAxis = rightTriggerAxis;
         this.leftTriggerAxis = leftTriggerAxis;
+
+        addRequirements(climber);
 
         // Buttons
         this.neutralTrigger = neutralTigger;
@@ -57,36 +62,48 @@ public class ShooterCommand extends Command {
     public void initialize() {}
 
     public void changeState() {
-        if (!neutralTrigger.get()) {
+        if (neutralTrigger.get() && climbStages < 3) {
             neutralState = true;
             speakerState = false;
             ampState = false;
             lowPassState = false;
             longPassState = false;
+            climberState = false;
         }else if (speakerButton.get()) {
             neutralState = false;
             speakerState = true;
             ampState = false;
             lowPassState = false;
             longPassState = false;
+            climberState = false;
         } else if(ampButton.get()) {
             neutralState = false;
             speakerState = false;
             ampState = true;
             lowPassState = false;
             longPassState = false;
+            climberState = false;
         } else if(lowPassButton.get()) {
             neutralState = false;
             speakerState = false;
             ampState = false;
             lowPassState = true;
             longPassState = false;
+            climberState = false;
         } else if(longPassButton.get()) {
             neutralState = false;
             speakerState = false;
             ampState = false;
             lowPassState = false;
             longPassState = true;
+            climberState = false;
+        } else if(climberButton.get()) {
+            neutralState = false;
+            speakerState = false;
+            ampState = false;
+            lowPassState = false;
+            longPassState = false;
+            climberState = true;
         }
     }
 
@@ -98,31 +115,23 @@ public class ShooterCommand extends Command {
         return rightTriggerAxis.get() > 0.0;
     }
 
-    public void intakeAndIndexerMove() {
-        if (shooter.isAtSetPoint(Constants.ShooterConstants.shootVelocity) && shooterPositioner.isAtSetPoint(shooterPositioner.getEstimatedShooterPositionerAngleWithRect())) {
+    public void indexerMove(double shootSetPoint, double angleSetPoint) {
+        if (shooter.isAtSetPoint(shootSetPoint) && shooterPositioner.isAtSetPoint(angleSetPoint)) {
             // Move intake and indexer when the shooter it's at set point
-            indexer.setVelocity(2000);
-            intake.setVelocity(2000);
+            indexer.setPercentage(0.5);
         } else {
             indexer.setPercentage(0);
-            intake.setPercentage(0);
         }
     }
 
     public void shootAtVelocity(double velocity) {
-        if (shootIsPressed()) {
-            setVelocity(velocity);
-        }else {
-            shooterPositioner.setPercentage(0.0, 0.0);
-        }
+        double shooterPercentage = rightTriggerAxis.get() - leftTriggerAxis.get();
+        double rpms = VelocityConstants.Velocities.kAmpShooterVelocity * shooterPercentage;
+        setVelocity(rpms);
     }
 
     public void moveShooterPositionerAtPosition(double position) {
-        if (shootIsPressed()) {
-            shooterPositioner.goToPosition(position);
-        }else {
-            shooterPositioner.setPercentage(0.0, 0.0);
-        }
+        shooterPositioner.goToPosition(position);
     }
 
     // Neutral State 
@@ -139,7 +148,7 @@ public class ShooterCommand extends Command {
 
     public void moveShooterPositionerAtSpeaker() {
         if (shootIsPressed()) {
-                shooterPositioner.goToEstimatedShooterPositionAngle();
+            shooterPositioner.goToEstimatedShooterPositionAngle();
         }else {
             shooterPositioner.setPercentage(0.0, 0.0);
         }
@@ -152,21 +161,17 @@ public class ShooterCommand extends Command {
         
         // In case that there's not a note
         if (neutralState) {
-            // Shooter angle
+            //  Shooter angle
             moveShooterPositionerAtNeutralPosition();
-            if (neutralTrigger.get()) {
-                speakerState = true;
-                neutralState = false;
-            }
         }else if (speakerState) { 
             // Shooter
             shootAtSpeaker();
 
-            // Shooter angle
             moveShooterPositionerAtSpeaker();
 
             // Intake and indexer
-            intakeAndIndexerMove();
+            indexerMove(Constants.ShooterConstants.shootVelocity, shooterPositioner.getEstimatedShooterPositionerAngleWithRect());
+
         }else if (ampState) {
             // Shooter
             shootAtVelocity(VelocityConstants.Velocities.kAmpShooterVelocity);
@@ -174,9 +179,7 @@ public class ShooterCommand extends Command {
             // Shooter angle
             moveShooterPositionerAtPosition(Constants.ShooterPositionerConstants.ampPosition);
 
-            // Intake and indexer
-            intakeAndIndexerMove();
-        } else if (lowPassState) {
+        } /*else if (lowPassState) {
             // Shooter
             shootAtVelocity(VelocityConstants.Velocities.kLowPassShooterVelocity);
 
@@ -184,7 +187,7 @@ public class ShooterCommand extends Command {
             moveShooterPositionerAtPosition(Constants.ShooterPositionerConstants.lowPassPosition);
 
             // Intake and indexer
-            intakeAndIndexerMove();
+            indexerMove(VelocityConstants.Velocities.kLowPassShooterVelocity, Constants.ShooterPositionerConstants.lowPassPosition);
         } else if (longPassState) {
             // Shooter
             shootAtVelocity(VelocityConstants.Velocities.kLongPassShooterVelocity);
@@ -193,8 +196,29 @@ public class ShooterCommand extends Command {
             moveShooterPositionerAtPosition(Constants.ShooterPositionerConstants.longPassPosition);
 
             // Intake and indexer
-            intakeAndIndexerMove();
-        }
+            indexerMove(VelocityConstants.Velocities.kLongPassShooterVelocity, Constants.ShooterPositionerConstants.longPassPosition);
+        } else if (climberState) {
+            // Stage 1 raise de hooks
+            if (!climber.isAtTopLimit() && climbStages == 0){
+                climber.setVelocity(Constants.ClimberConstants.velocity, Constants.ClimberConstants.velocity);
+                climbStages++;
+            } 
+
+            // Stage 2 move shooter positioner at trap position after the robot climbed
+            if (climber.isAtBottomLimit()) {
+                moveShooterPositionerAtPosition(Constants.ShooterPositionerConstants.trapPosition);
+                if (shooterPositioner.isAtSetPoint(Constants.ShooterPositionerConstants.trapPosition)){
+                    climbStages++;
+                }
+            }
+
+            // Stage 3 shoot the note
+            if (climbStages == 3) {
+                // Shooter
+                shootAtVelocity(VelocityConstants.Velocities.kAmpShooterVelocity);
+                indexerMove(VelocityConstants.Velocities.kAmpShooterVelocity, Constants.ShooterPositionerConstants.ampPosition);
+            }
+        }*/
     }
 
     @Override

@@ -47,7 +47,7 @@ public class SwerveAlignToAprilTag {
 
     public ChassisSpeeds alignToAprilTagChassisSpeeds(double setPoint) {
         double limelightX = limelight.getX();
-        double rotatePercentage = -rotatePidController.calculate(limelightX, setPoint);
+        double rotatePercentage = rotatePidController.calculate(limelightX, setPoint);
 
         return new ChassisSpeeds(0.0, 0.0, rotatePercentage);
     }

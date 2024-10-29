@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.PS4Controller.Button;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -15,7 +16,7 @@ import frc.robot.commands.AutoCommands.ShooterAutoCommand;
 import frc.robot.commands.AutoCommands.StartShoot;
 import frc.robot.commands.TeleopCommands.SwerveJoystickCmd;
 import frc.robot.commands.TeleopCommands.IntakeAndIndexerCommand;
-import frc.robot.commands.TeleopCommands.ShooterCommand;
+import frc.robot.commands.TeleopCommands.TeleopStatesCommand;
 import frc.robot.constants.Constants;
 import frc.robot.constants.Constants.ClimberConstants;
 import frc.robot.constants.Constants.IndexerConstants;
@@ -43,11 +44,11 @@ public class RobotContainer {
   private final Joystick driverJoytick = new Joystick(OIConstants.kDriverControllerPort);
 
   private final Shooter shooter = new Shooter(Constants.ShooterConstants.BOTTOM_SHOOTER_ID, Constants.ShooterConstants.Top_SHOOTER_ID);
-  private final ShooterPositioner shooterPositioner = new ShooterPositioner(Constants.ShooterPositionerConstants.rightPositionerId, Constants.ShooterPositionerConstants.leftPositionerId);
-  private final Intake intake = new Intake(Constants.IntakeConstants.motorId);
+  private final LimitSwitches limitSwitches = new LimitSwitches();
+  private final ShooterPositioner shooterPositioner = new ShooterPositioner(Constants.ShooterPositionerConstants.rightPositionerId, Constants.ShooterPositionerConstants.leftPositionerId, limitSwitches);
+  private final Intake intake = new Intake(Constants.IntakeConstants.topMotorId, Constants.IntakeConstants.bottomMotorId);
   private final Indexer indexer = new Indexer(Constants.IndexerConstants.motorId);
   private final Climber climber = new Climber(Constants.ClimberConstants.rightMotorId, Constants.ClimberConstants.leftMotorId);
-  private final LimitSwitches limitSwitches = new LimitSwitches();;
   private final ShuffleboardTab robotContainerTab;
   private final XboxController controller = new XboxController(0);
 
@@ -69,20 +70,21 @@ public class RobotContainer {
                 () -> true,
                 () -> controller.getRightTriggerAxis() > 0.0));
           
-        shooter.setDefaultCommand(new ShooterCommand(
+        climber.setDefaultCommand(new TeleopStatesCommand(
+              climber,
+              shooter,
+              shooterPositioner,
+              intake,
+              indexer,
               () -> controller.getRightTriggerAxis(),
               () -> controller.getLeftTriggerAxis(),
-              () -> limitSwitches.getLimitSwitchesRead(),
+              () -> controller.getRightStickButton(),
               () -> controller.getAButton(),
               () -> controller.getYButton(),
               () -> controller.getBButton(),
               () -> controller.getXButton(),
-              () -> false,
-              shooter,
-              shooterPositioner,
-              intake,
-              indexer  
-        ));
+              () -> false));
+              
         // !!!! Auto !!!!
 
         // Auto commands and susbsystems
@@ -99,7 +101,7 @@ public class RobotContainer {
 
         // Shuffle board
         robotContainerTab = Shuffleboard.getTab("Robot Container");
-        robotContainerTab.addBoolean("Limit Switches Read: ", () -> {return limitSwitches.getLimitSwitchesRead();});
+        robotContainerTab.addBoolean("Limit Switches Read: ", () -> {return limitSwitches.getShooterLimitSwitch();});
         robotContainerTab.addBoolean("Shooter is at set point: ", () -> {return shooter.isAtSetPoint(Constants.ShooterConstants.shootVelocity);});
         robotContainerTab.addDouble("X robot position: ", () -> {return swerveSubsystem.getPose().getX();});
         robotContainerTab.addDouble("Y robot position: ", () -> {return swerveSubsystem.getPose().getY();});
@@ -111,21 +113,23 @@ public class RobotContainer {
     private void configureButtonBindings() {
         // Reset gyro
         new JoystickButton(controller, XboxController.Button.kStart.value).onTrue(swerveSubsystem.runOnce(swerveSubsystem::zeroHeading));
-
-        // Intake && indexer
-        new Trigger(() -> controller.getLeftBumper() || controller.getRightBumper() && !limitSwitches.getLimitSwitchesRead())
-          .whileTrue(new RunCommand(() -> intakeAndIndexerCommand.moveIntakeAndIndexer(Constants.IntakeConstants.CONFIGURED_SETPOINT * (controller.getLeftBumper() ? -1.0 : 1.0),
-                                                                                        Constants.IndexerConstants.CONFIGURED_SETPOINT * (controller.getLeftBumper() ? -1.0 : 1.0))))
-          .onFalse(new InstantCommand(() -> intakeAndIndexerCommand.stopIntakeAndIndexer()));
+        /*
 
         // Climber
         new Trigger(() -> (controller.getPOV() == 0) || (controller.getPOV() == 180))
           .whileTrue(new RunCommand(() -> climber.setVelocity(ClimberConstants.velocity * ((controller.getPOV() == 180) ? -1.0 : 1.0), ClimberConstants.velocity * ((controller.getPOV() == 180) ? -1.0 : 1.0))))
           .onFalse(new InstantCommand(() -> climber.setPercentage(0.0, 0.0)));
-
+        */
+        
+        // Intake && indexer
+        new Trigger(() -> controller.getLeftBumper() || controller.getRightBumper() && !limitSwitches.getShooterLimitSwitch())
+          .whileTrue(new RunCommand(() -> intakeAndIndexerCommand.setIntakeAndIndexer(0.5 * (controller.getLeftBumper() ? -1.0 : 1.0),
+                                                                                        0.5 * (controller.getLeftBumper() ? -1.0 : 1.0))))
+          .onFalse(new InstantCommand(() -> intakeAndIndexerCommand.stopIntakeAndIndexer()));
+        
         // ShooterPositioner
         new Trigger(() -> (controller.getPOV() == 270) || (controller.getPOV() == 90))
-          .whileTrue(new RunCommand(() -> shooterPositioner.setPercentage(0.1 * ((controller.getPOV() == 90) ? -1.0 : 1.0), 0.1 * ((controller.getPOV() == 90) ? -1.0 : 1.0))))
+          .whileTrue(new RunCommand(() -> shooterPositioner.setPercentage(0.1 * ((controller.getPOV() == 270) ? -1.0 : 1.0), 0.1 * ((controller.getPOV() == 270) ? -1.0 : 1.0))))
           .onFalse(new InstantCommand(() -> shooterPositioner.setPercentage(0.0, 0.0)));
     }
 
@@ -134,9 +138,6 @@ public class RobotContainer {
         return new PathPlannerAuto("FasterNotesAuto");
     }
   
-  public void teleopPeriodic() {{
-
-    }
-
+  public void teleopPeriodic() {
   }
 }

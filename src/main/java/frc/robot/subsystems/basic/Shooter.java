@@ -85,11 +85,11 @@ public class Shooter extends SubsystemBase{
         }
     }
 
-    public void setVelocity(final double topRpms, final double bottomRpms) {
+    public void setVelocity(final double topRps, final double bottomRps) {
         // create a velocity closed-loop request, voltage output, slot 0 configs
         VelocityVoltage m_request = new VelocityVoltage(0).withSlot(0);
-        topMotor.setControl(m_request.withVelocity(topRpms).withFeedForward(ShooterConstants.TOP_F));
-        bottomMotor.setControl(m_request.withVelocity(bottomRpms).withFeedForward(ShooterConstants.BOTTOM_F));
+        topMotor.setControl(m_request.withVelocity(topRps).withFeedForward(ShooterConstants.TOP_F));
+        bottomMotor.setControl(m_request.withVelocity(bottomRps).withFeedForward(ShooterConstants.BOTTOM_F));
 
     }
 
